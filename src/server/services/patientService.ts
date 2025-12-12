@@ -120,7 +120,7 @@ export class PatientService {
           .insert({
             name: data.owner,
             email: data.ownerEmail,
-            password_hash: await require('bcrypt').hash('TempPass123!', 12), // Temporary password
+            password_hash: await require('bcryptjs').hash('TempPass123!', 12), // Temporary password
             role: 'pet-owner'
           })
           .select()

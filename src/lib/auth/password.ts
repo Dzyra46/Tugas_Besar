@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 // Salt rounds - higher = more secure but slower
 // 12 adalah sweet spot antara security dan performance
