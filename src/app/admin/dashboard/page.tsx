@@ -16,6 +16,70 @@ interface StatsCard {
   loading?: boolean;
 }
 
+interface AuditLog {
+  id: string;
+  user_id: string | null;
+  user_name: string;
+  user_role: string;
+  action: string;
+  resource: string;
+  details: string;
+  ip_address: string | null;
+  status: string;
+  timestamp: string;
+}
+
+// Helper function untuk mendapatkan warna border berdasarkan action
+const getActivityColor = (action: string): string => {
+  const actionLower = action.toLowerCase();
+  if (actionLower.includes('create') || actionLower.includes('add') || actionLower.includes('register')) {
+    return 'border-green-500';
+  } else if (actionLower.includes('update') || actionLower.includes('edit') || actionLower.includes('modify')) {
+    return 'border-blue-500';
+  } else if (actionLower.includes('delete') || actionLower.includes('remove')) {
+    return 'border-red-500';
+  } else if (actionLower.includes('login') || actionLower.includes('logout') || actionLower.includes('auth')) {
+    return 'border-purple-500';
+  } else if (actionLower.includes('approve') || actionLower.includes('accept')) {
+    return 'border-green-500';
+  } else if (actionLower.includes('reject') || actionLower.includes('deny')) {
+    return 'border-orange-500';
+  }
+  return 'border-gray-500';
+};
+
+// Helper function untuk format waktu relative
+const getRelativeTime = (timestamp: string): string => {
+  const now = new Date();
+  const logTime = new Date(timestamp);
+  const diffMs = now.getTime() - logTime.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  
+  return logTime.toLocaleDateString('id-ID', { 
+    day: '2-digit', 
+    month: 'short', 
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+// Helper function untuk format activity message
+const formatActivityMessage = (log: AuditLog): string => {
+  const action = log.action;
+  const resource = log.resource;
+  const userName = log.user_name;
+  
+  return `${userName} ${action.toLowerCase()} ${resource}`;
+};
+
 export default function AdminDashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -26,6 +90,8 @@ export default function AdminDashboardPage() {
     { title: 'Medical Records', value: 0, icon: '📋', change: null, loading: true },
   ]);
   const [loading, setLoading] = useState(true);
+  const [recentActivities, setRecentActivities] = useState<AuditLog[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
@@ -38,6 +104,12 @@ export default function AdminDashboardPage() {
     }
 
     fetchDashboardStats();
+
+    const intervalid = setInterval(() => {
+      fetchRecentActivities();
+    }, 60000);
+
+    return () => clearInterval(intervalid);
   }, [user, router]);
 
   const fetchDashboardStats = async () => {
@@ -95,6 +167,9 @@ export default function AdminDashboardPage() {
         },
       ]);
 
+      // Fetch recent activities after stats loaded
+      await fetchRecentActivities();
+
     } catch (error) {
       console.error('Failed to fetch dashboard stats:', error);
       toast.error('Failed to load dashboard statistics');
@@ -103,6 +178,31 @@ export default function AdminDashboardPage() {
       setStats(prev => prev.map(stat => ({ ...stat, loading: false })));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRecentActivities = async () => {
+    try {
+      setActivitiesLoading(true);
+      
+      const res = await fetch('/api/audit-logs?limit=10&sort=desc', {
+        credentials: 'include'
+      });
+      
+      if (!res.ok) {
+        throw new Error('Failed to fetch audit logs');
+      }
+      
+      const data = await res.json();
+      console.log('Recent activities:', data.logs);
+      
+      setRecentActivities(data.logs || []);
+    } catch (error) {
+      console.error('Error fetching recent activities:', error);
+      toast.error('Failed to load recent activities');
+      setRecentActivities([]);
+    } finally {
+      setActivitiesLoading(false);
     }
   };
 
@@ -136,7 +236,7 @@ export default function AdminDashboardPage() {
                       <p className="text-3xl font-bold mt-2 text-gray-900">{stat.value}</p>
                       {/* Only show change if it's not null */}
                       {stat.change !== null && stat.change !== undefined && (
-                        <div className={`mt-2 text-sm felx items-center ${stat.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <div className={`mt-2 text-sm flex items-center ${stat.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                           <span className="mr-1">{stat.change >= 0 ? '↑' : '↓'}</span>
                           {Math.abs(stat.change)} from last month
                         </div>
@@ -204,30 +304,57 @@ export default function AdminDashboardPage() {
           <div className="mt-8">
             <Card className="overflow-hidden">
               <div className="p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
-                {loading ? (
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
+                  <button 
+                    onClick={() => router.push('/admin/logs')}
+                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    View All
+                  </button>
+                </div>
+                
+                {activitiesLoading ? (
                   <div className="text-center py-8">
                     <Loader className="w-8 h-8 animate-spin mx-auto text-blue-600" />
                     <p className="text-gray-600 mt-2">Loading activities...</p>
                   </div>
+                ) : recentActivities.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">No recent activities found</p>
+                  </div>
                 ) : (
-                  <div className="space-y-4">
-                    <div className="border-l-4 border-blue-500 pl-4 py-2">
-                      <p className="text-sm text-gray-600">Dashboard loaded</p>
-                      <p className="text-gray-900">Viewing current statistics</p>
-                    </div>
-                    <div className="border-l-4 border-green-500 pl-4 py-2">
-                      <p className="text-sm text-gray-600">System Status</p>
-                      <p className="text-gray-900">All services operational</p>
-                    </div>
-                    {stats[2].value > 0 && (
-                      <div className="border-l-4 border-yellow-500 pl-4 py-2">
-                        <p className="text-sm text-gray-600">Attention Required</p>
-                        <p className="text-gray-900">
-                          {stats[2].value} pending correction{stats[2].value > 1 ? 's' : ''} awaiting review
-                        </p>
+                  <div className="space-y-3">
+                    {recentActivities.slice(0, 5).map((log) => (
+                      <div 
+                        key={log.id} 
+                        className={`border-l-4 ${getActivityColor(log.action)} pl-4 py-2 hover:bg-gray-50 transition-colors rounded-r`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900">
+                              {formatActivityMessage(log)}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {log.details}
+                            </p>
+                            <div className="flex items-center gap-3 mt-1">
+                              <span className="text-xs text-gray-400">
+                                {getRelativeTime(log.timestamp)}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                Role: {log.user_role}
+                              </span>
+                              {log.status === 'failed' && (
+                                <span className="text-xs text-red-600 font-medium">
+                                  Failed
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    )}
+                    ))}
                   </div>
                 )}
               </div>

@@ -4,6 +4,7 @@ import { withAuth, requireRole, authError } from '@/lib/auth/middleware';
 import { createAdminClient } from '@/lib/supabase/server';
 import { validateUUID, validateTextField, validateEnum } from '@/lib/validation/validators';
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/ratelimit/ratelimiter';
+import { getDoctorIdFromUserId } from '@/lib/helpers/doctorHelper';
 
 // GET /api/corrections - List corrections
 export async function GET(request: NextRequest) {
@@ -51,7 +52,15 @@ export async function GET(request: NextRequest) {
           corrections = corrections.filter((c: any) => c.status === statusFilter);
         }
       } else if (user!.role === 'doctor') {
-        corrections = await CorrectionService.getByDoctor(doctorId || user!.id);
+        let effectiveDoctorId = doctorId;
+
+        if (!effectiveDoctorId) {
+          effectiveDoctorId = await getDoctorIdFromUserId(user!.id);
+          if (!effectiveDoctorId) {
+            return authError('Doctor record not found', 404);
+          }
+        }
+        corrections = await CorrectionService.getByDoctor(effectiveDoctorId);
       } else {
         return authError('Unauthorized to view corrections', 403);
       }

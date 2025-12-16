@@ -53,7 +53,7 @@ export default function DoctorDashboardPage() {
       setLoading(true);
 
       // Fetch statsistics
-      const statsResponse = await fetch('/api/doctor/stats');
+      const statsResponse = await fetch('/api/doctor-stats');
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
         setStats(statsData);

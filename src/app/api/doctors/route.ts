@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 4b. Validate password strength
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[^\s]{8,}$/;
     if (!passwordRegex.test(password)) {
       return authError('Password must be at least 8 characters with uppercase, lowercase, number, and special character', 400);
     }
@@ -159,6 +159,7 @@ export async function POST(request: NextRequest) {
     // 7. Create doctor (with password for user account)
     const doctor = await DoctorService.create({
       name,
+      user_id: user!.id,
       email,
       specialization,
       license_number,
@@ -226,7 +227,7 @@ export async function PATCH(request: NextRequest) {
     // 5. Check authorization (admin or self)
     if (user!.role !== 'admin') {
       const doctor = await DoctorService.getById(id);
-      if (!doctor || doctor.id !== user!.id) {
+      if (!doctor || doctor.user_id !== user!.id) {
         return authError('Unauthorized to update this doctor', 403);
       }
     }

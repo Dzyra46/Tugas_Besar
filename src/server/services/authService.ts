@@ -37,7 +37,7 @@ export class AuthService {
     }
 
     // Validate password strength
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[^\s]{8,}$/;
     if (!passwordRegex.test(password)) {
       throw new Error('Password must be at least 8 characters and contain uppercase, lowercase, number, and special character');
     }
@@ -114,12 +114,12 @@ export class AuthService {
     if (user.role === 'doctor') {
       const { data: doctorData } = await supabase
         .from('doctors')
-        .select('user_id')
+        .select('id')
         .eq('user_id', user.id)
         .single();
       
       if (doctorData) {
-        doctorId = doctorData.user_id;
+        doctorId = doctorData.id;
       }
     }
 
@@ -159,14 +159,14 @@ export class AuthService {
       const supabase = createAdminClient();
       const { data: doctorData } = await supabase
         .from('doctors')
-        .select('user_id')
+        .select('id')
         .eq('user_id', user.id)
         .single();
       
       if (doctorData) {
         return {
           ...user,
-          user_id: doctorData.user_id,
+          user_id: doctorData.id,
         } as User;
       }
     }
@@ -201,14 +201,14 @@ export class AuthService {
     if (user.role === 'doctor') {
       const { data: doctorData } = await supabase
         .from('doctors')
-        .select('user_id')
+        .select('id')
         .eq('user_id', user.id)
         .single();
       
       if (doctorData) {
         return {
           ...user,
-          user_id: doctorData.user_id,
+          user_id: doctorData.id,
         };
       }
     }

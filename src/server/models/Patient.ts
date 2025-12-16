@@ -12,6 +12,8 @@ export interface Patient {
   qr_code: string;
   status: 'healthy' | 'under-treatment' | 'recovered';
   notes?: string;
+  assigned_doctor_id?: string;
+  assigned_at?: string;
   created_at?: string;
   updated_at?: string;
 }

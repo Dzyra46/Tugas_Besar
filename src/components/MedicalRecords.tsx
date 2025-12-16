@@ -13,6 +13,7 @@ import { PatientSelector } from './PatientSelector';
 interface MedicalRecord {
   id: string;
   patient_id: string;
+  patient_name: string;
   user_id: string;
   visit_date: string;
   weight?: number;
@@ -278,20 +279,39 @@ export function MedicalRecords() {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
-      <div className="mb-6 space-y-2">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Medical Records</h1>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+  
+        {/* Bagian Kiri: Judul & Konteks */}
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+              Medical Records
+            </h1>
+            
+            {/* Badge Total Count */}
+            <span className="px-2.5 py-0.5 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-100 rounded-full">
+              Records: {counts.all}
+            </span>
+          </div>
+          
+          <p className="text-sm text-gray-500">
+            Manage patient history, diagnoses, and treatments.
+          </p>
+        </div>
+
+        {/* Bagian Kanan: Tombol Aksi */}
+        <div className="flex items-center gap-3">
+          {/* (Opsional) Tempat untuk Search/Filter bisa diletakkan di sini nanti */}
+          
           <Button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-2"
+            className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5 flex items-center gap-2 px-5"
           >
             <Plus className="w-4 h-4" />
-            New Record
+            <span className="font-medium">New Record</span>
           </Button>
         </div>
-        <div className="flex flex-wrap gap-3 text-xs">
-          <span className="px-2 py-1 rounded bg-gray-100">Total: {counts.all}</span>
-        </div>
+
       </div>
 
       {/* Search */}
@@ -317,122 +337,139 @@ export function MedicalRecords() {
       ) : (
         <div className="grid gap-4">
           {filteredRecords.map((record) => (
-            <Card key={record.id} className="hover:shadow-lg transition-shadow">
-              <div className="space-y-4">
-                <div className="flex items-start justify-between border-b pb-4">
+            <Card 
+              key={record.id} 
+              className="group hover:shadow-md transition-all duration-200 border-l-4 border-l-blue-500 overflow-hidden"
+            >
+              <div className="p-5 space-y-5">
+                
+                {/* --- HEADER SECTION: Diagnosis & Actions --- */}
+                <div className="flex items-start justify-between">
                   <div className="space-y-1 flex-1">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                      <FileText className="w-5 h-5" />
-                      <span>{record.diagnosis}</span>
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        {record.diagnosis}
+                      </h3>
+                      {/* Badge Correction */}
                       {corrections.some(c => c.record_id === record.id && c.status === 'approved') && (
-                        <span className="ml-2 px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">
+                        <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-yellow-100 text-yellow-700 rounded-full border border-yellow-200">
                           Corrected
                         </span>
                       )}
-                    </h3>
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                      <FileText className="w-5 h-5" />
-                      <span>{record.diagnosis}</span>
-                    </h3>
-                    <p className="text-xs text-gray-500">
-                      Patient: {record.patient_id.slice(0, 8)}...
-                    </p>
+                    </div>
+                    
+                    {/* Meta Information Row (Patient ID & Doctor ID) */}
+                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <span 
+                        className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded cursor-help"
+                        title={`Patient ID: ${record.patient_id}`}
+                      >
+                        <span className="font-semibold text-gray-400">PATIENT:</span> 
+                        <span className="font-mono text-gray-700">
+                          {record.patient_name || record.patient_id.slice(0, 8) + '...'}
+                        </span>
+                      </span>
+                      {record.user_id && (
+                        <span className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded">
+                          <span className="font-semibold text-gray-400">DOC:</span> 
+                          <span className="font-mono text-gray-700">{record.user_id.slice(0, 8)}...</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => handleEdit(record)}
-                      className="p-1 hover:bg-gray-100 rounded"
-                      title="Edit"
+                      className="p-2 hover:bg-blue-50 text-gray-400 hover:text-blue-600 rounded-full transition-colors"
+                      title="Edit Record"
                     >
-                      <Edit2 className="w-4 h-4 text-gray-600" />
+                      <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDelete(record.id)}
-                      className="p-1 hover:bg-gray-100 rounded"
-                      title="Delete"
+                      className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-600 rounded-full transition-colors"
+                      title="Delete Record"
                     >
-                      <Trash2 className="w-4 h-4 text-red-600" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <p className="text-xs text-gray-500">Visit Date</p>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="w-4 h-4 text-gray-500" />
+                <hr className="border-gray-100" />
+
+                {/* --- DATES SECTION --- */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] uppercase tracking-wider font-semibold text-gray-400 mb-1">Visit Date</span>
+                    <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                      <Calendar className="w-4 h-4 text-blue-500" />
+                      <span>
+                        {new Date(record.visit_date).toLocaleDateString('id-ID', {
+                          day: '2-digit', month: 'long', year: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {record.next_visit && (
+                    <div className="flex flex-col">
+                      <span className="text-[10px] uppercase tracking-wider font-semibold text-gray-400 mb-1">Next Visit</span>
+                      <div className="flex items-center gap-2 text-sm font-medium text-purple-700 bg-purple-50 w-fit px-2 py-0.5 rounded-md">
+                        <Calendar className="w-4 h-4" />
                         <span>
-                          {new Date(record.visit_date).toLocaleDateString(undefined, {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
+                          {new Date(record.next_visit).toLocaleDateString('id-ID', {
+                            day: '2-digit', month: 'long', year: 'numeric'
                           })}
                         </span>
                       </div>
                     </div>
-                    {record.next_visit && (
-                      <div className="space-y-1">
-                        <p className="text-xs text-gray-500">Next Visit</p>
-                        <div className="flex items-center gap-2 text-sm">
-                          <Calendar className="w-4 h-4 text-gray-500" />
-                          <span>
-                            {new Date(record.next_visit).toLocaleDateString(
-                              undefined,
-                              { day: '2-digit', month: 'short', year: 'numeric' }
-                            )}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className="text-xs text-gray-500">Treatment</p>
-                    <p
-                      className={`text-sm leading-relaxed ${
-                        expanded[record.id] ? '' : 'line-clamp-3'
-                      }`}
-                    >
-                      {record.treatment}
-                    </p>
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className="text-xs text-gray-500">Medication</p>
-                    <p
-                      className={`text-sm leading-relaxed ${
-                        expanded[record.id] ? '' : 'line-clamp-2'
-                      }`}
-                    >
-                      {record.medication}
-                    </p>
-                  </div>
-
-                  {record.user_id && (
-                    <div className="space-y-1">
-                      <p className="text-xs text-gray-500">Doctor ID</p>
-                      <p className="text-sm font-mono text-gray-600">
-                        {record.user_id.slice(0, 8)}...
-                      </p>
-                    </div>
                   )}
+                </div>
 
-                  {record.notes && (
-                    <div className="space-y-1">
-                      <p className="text-xs text-gray-500">Notes</p>
-                      <p className="text-sm text-gray-700">{record.notes}</p>
+                {/* --- MAIN CONTENT (Grid Layout for Desktop) --- */}
+                <div className="grid md:grid-cols-2 gap-4">
+                    
+                    {/* Treatment Box */}
+                    <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                        <p className="text-[10px] uppercase tracking-wider font-bold text-blue-600 mb-1">Treatment</p>
+                        <p className={`text-sm text-gray-700 leading-relaxed ${expanded[record.id] ? '' : 'line-clamp-3'}`}>
+                          {record.treatment}
+                        </p>
                     </div>
-                  )}
 
+                    {/* Medication Box */}
+                    <div className="bg-green-50/50 p-3 rounded-lg border border-green-100">
+                        <p className="text-[10px] uppercase tracking-wider font-bold text-green-600 mb-1">Medication</p>
+                        <p className={`text-sm text-gray-700 leading-relaxed ${expanded[record.id] ? '' : 'line-clamp-3'}`}>
+                          {record.medication}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Notes Section (Full Width) */}
+                {record.notes && (
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-wider font-semibold text-gray-400">Notes</p>
+                    <div className="flex gap-2">
+                        <div className="w-1 bg-gray-200 rounded-full shrink-0"></div>
+                        <p className="text-sm text-gray-600 italic">{record.notes}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* --- FOOTER: Expand Toggle --- */}
+                <div className="flex justify-end pt-2">
                   <button
                     type="button"
                     onClick={() => toggleExpand(record.id)}
-                    className="text-xs text-blue-600 hover:underline"
+                    className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
                   >
-                    {expanded[record.id] ? 'Show less' : 'Show more'}
+                    {expanded[record.id] ? 'Show less' : 'Show details'}
                   </button>
                 </div>
+
               </div>
             </Card>
           ))}
@@ -494,6 +531,23 @@ export function MedicalRecords() {
                   }
                   required
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Weight (kg)
+                </label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={formData.weight}
+                  onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                  placeholder="e.g., 15.5"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Berat badan saat kunjungan (akan ditimbang oleh tim medis)
+                </p>
               </div>
 
               <div>

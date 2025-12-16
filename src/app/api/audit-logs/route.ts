@@ -7,7 +7,7 @@ import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/ratelimit/
 // GET /api/audit-logs - Fetch audit logs (admin only)
 export async function GET(request: NextRequest) {
   try {
-    // 1. Check rate limit (100 read requests per minute)
+    // 1. Check rate limit (30 read requests per minute)
     const { allowed, remaining, resetTime } = checkRateLimit(
       request,
       RATE_LIMITS.API_READ.limit,

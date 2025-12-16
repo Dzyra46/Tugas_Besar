@@ -75,8 +75,13 @@ export function validatePasswordStrength(password: string): {
   }
 
   // Must contain at least one special character
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+  if (!/[\W_]/.test(password)) {
     errors.push('Password must contain at least one special character');
+  }
+
+  // No spaces allowed
+  if (/\s/.test(password)) {
+    errors.push('Password must not contain spaces');
   }
 
   return {

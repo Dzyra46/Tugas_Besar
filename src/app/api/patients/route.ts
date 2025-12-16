@@ -50,8 +50,51 @@ export async function GET(request: NextRequest) {
     // 4. Get patients based on role
     let patients;
 
-    if (user!.role === 'admin' || user!.role === 'doctor') {
-      // Admin & doctors can access all patients
+    if (user!.role === 'doctor') {
+      // Step A: Get doctor.id dari user.id
+      const supabase = createAdminClient();
+      const { data: doctorData, error: doctorError } = await supabase
+        .from('doctors')
+        .select('id')
+        .eq('user_id', user!.id)
+        .single();
+
+      if (doctorError || !doctorData) {
+        return authError('Doctor record not found', 404);
+      }
+
+      // Step B: Query patients dengan filter
+      const { data: filteredPatients, error: patientsError } = await supabase
+        .from('patients_with_last_visit')
+        .select('*')
+        .or(`assigned_doctor_id.is.null,assigned_doctor_id.eq.${doctorData.id}`)
+        .order('created_at', { ascending: false });
+
+      if (patientsError) {
+        console.error('Error fetching patients for doctor:', patientsError);
+        return authError('Failed to fetch patients', 500);
+      }
+
+      patients = filteredPatients || [];
+
+      // Apply search filter
+      if (search && patients.length > 0) {
+        const searchLower = search.toLowerCase();
+        patients = patients.filter(p => 
+          p.name.toLowerCase().includes(searchLower) ||
+          p.owner.toLowerCase().includes(searchLower) ||
+          p.breed.toLowerCase().includes(searchLower) ||
+          p.species.toLowerCase().includes(searchLower)
+        );
+      }
+
+      // Apply status filter
+      if (status_filter && patients.length > 0) {
+        patients = patients.filter(p => p.status === status_filter);
+      }
+
+    } else if (user!.role === 'admin') {
+      // Admin uses PatientService (no filtering)
       if (search) {
         patients = await PatientService.search(search);
       } else if (status_filter) {
@@ -60,7 +103,7 @@ export async function GET(request: NextRequest) {
         patients = await PatientService.getAll();
       }
     } else {
-      // Pet owners can only access their own patients (via RLS)
+      // pet-owner role
       patients = await PatientService.getByOwner(user!.name);
     }
 
@@ -105,10 +148,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 2. Check authorization (only admin & doctor)
+    // 2. Check authorization (only admin)
     const { authorized, user, error, status: authStatus } = await requireRole(
       request,
-      ['admin', 'doctor']
+      ['admin']
     );
 
     if (!authorized) {

@@ -153,8 +153,8 @@ export function rateLimitResponse(resetTime: number, remaining: number) {
  */
 export const RATE_LIMITS = {
   // Authentication endpoints - ketat
-  AUTH_LOGIN: { limit: 10, windowMs: 15 * 60 * 1000 }, // 5 requests per 15 minutes
-  AUTH_REGISTER: { limit: 3, windowMs: 60 * 60 * 1000 }, // 3 requests per hour
+  AUTH_LOGIN: { limit: 30, windowMs: 15 * 60 * 1000 }, // 30 requests per 15 minutes
+  AUTH_REGISTER: { limit: 10, windowMs: 60 * 60 * 1000 }, // 10 requests per hour
   AUTH_LOGOUT: { limit: 10, windowMs: 60 * 1000 }, // 10 requests per minute
   
   // API endpoints - moderate

@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
-import { Search, UserPlus, Edit, Trash2, Stethoscope } from 'lucide-react';
+import { Search, UserPlus, Edit, Trash2, Stethoscope, Phone, Award, FileText, X, UserCheck, UserX, Activity } from 'lucide-react';
 import { toast } from 'sonner';
+import { join } from 'path/win32';
 
 interface Doctor {
   id: string;
@@ -16,7 +17,7 @@ interface Doctor {
   specialization: string;
   license_number: string;
   status: 'active' | 'inactive';
-  joinDate: string;
+  join_date: string;
 }
 
 export function DoctorManagement() {
@@ -214,93 +215,172 @@ export function DoctorManagement() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-5">
-        <h1 className="text-3xl font-bold mb-2">Doctor Management</h1>
-        <p className="text-gray-600">Manage veterinarian accounts and information</p>
-      </div>
+    <div className="container mx-auto px-4 py-8 space-y-8">
 
-      {/* Search and Add Button */}
-      <div className="mb-5 flex items-center gap-4 space-y-0 md:space-y-0 flex-col md:flex-row">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input
-            type="text"
-            placeholder="Search by name, email, or specialization..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+      {/* --- HEADER SECTION --- */}
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Doctor Management</h1>
+          <p className="text-gray-500 mt-1">Manage veterinarian accounts, licenses, and specialization.</p>
         </div>
-        <Button className="flex items-center gap-2" onClick={() => setShowAddModal(true)}>
-          <UserPlus className="w-4 h-4 mr-2" />
-          Add Doctor
+        <Button 
+          onClick={() => setShowAddModal(true)} 
+          className="bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200 hover:shadow-blue-300 transition-all text-white flex items-center gap-2 px-6 py-2.5 rounded-full"
+        >
+          <UserPlus className="w-4 h-4" />
+          Add New Doctor
         </Button>
       </div>
 
+      {/* STAT CARDS */}
+      {/* Kita hitung stat secara inline dari data yang ada */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="p-4 flex items-center justify-between border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-all">
+            <div>
+                <p className="text-sm font-medium text-gray-500">Total Doctors</p>
+                <p className="text-2xl font-bold text-blue-700">{filteredDoctors.length}</p>
+            </div>
+            <div className="p-3 rounded-full bg-blue-50 text-blue-600">
+                <Stethoscope className="w-5 h-5" />
+            </div>
+        </Card>
+        <Card className="p-4 flex items-center justify-between border-l-4 border-l-green-500 shadow-sm hover:shadow-md transition-all">
+            <div>
+                <p className="text-sm font-medium text-gray-500">Active Status</p>
+                <p className="text-2xl font-bold text-green-700">
+                  {filteredDoctors.filter(d => d.status === 'active').length}
+                </p>
+            </div>
+            <div className="p-3 rounded-full bg-green-50 text-green-600">
+                <UserCheck className="w-5 h-5" />
+            </div>
+        </Card>
+        <Card className="p-4 flex items-center justify-between border-l-4 border-l-gray-300 shadow-sm hover:shadow-md transition-all">
+            <div>
+                <p className="text-sm font-medium text-gray-500">Inactive/Leave</p>
+                <p className="text-2xl font-bold text-gray-700">
+                  {filteredDoctors.filter(d => d.status !== 'active').length}
+                </p>
+            </div>
+            <div className="p-3 rounded-full bg-gray-100 text-gray-600">
+                <UserX className="w-5 h-5" />
+            </div>
+        </Card>
+      </div>
+
+      {/* Search Bar */}
+      <Card className="p-2 sticky top-4 z-10 shadow-sm border-gray-200 bg-white/95 backdrop-blur-sm">
+         <div className="relative w-full">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+                type="text"
+                placeholder="Search by name, license ID, or specialization..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 text-sm border-none focus:ring-0 bg-transparent placeholder:text-gray-400 outline-none"
+            />
+         </div>
+      </Card>
+
       {/* Doctors Table */}
-      <Card>
+      <Card className="overflow-hidden border border-gray-200 shadow-sm">
         <CardHeader>
-          <CardTitle>Registered Doctors ({filteredDoctors.length})</CardTitle>
+          <CardTitle>Registered Doctors</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4">Name</th>
-                  <th className="text-left py-3 px-4">Contact</th>
-                  <th className="text-left py-3 px-4">Specialization</th>
-                  <th className="text-left py-3 px-4">License No.</th>
-                  <th className="text-left py-3 px-4">Status</th>
-                  <th className="text-left py-3 px-4">Join Date</th>
-                  <th className="text-left py-3 px-4">Actions</th>
+                <tr className="bg-gray-50/50 border-b border-gray-200 text-xs uppercase trackingw-wider text-gray-500 font-semibold">
+                  <th className="py-4 px-6">Name</th>
+                  <th className="py-4 px-6">Contact</th>
+                  <th className="py-4 px-6">Specialization</th>
+                  <th className="py-4 px-6">License & Join Date</th>
+                  <th className="py-4 px-6">Status</th>
+                  <th className="py-4 px-6">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-200">
                 {filteredDoctors.map((doctor) => (
-                  <tr key={doctor.id} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-4">
+                  <tr key={doctor.id} className="hover:bg-blue-50/30 transition-colors group">
+                    {/*Name*/}
+                    <td className="py-4 px-6 align-middle">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <Stethoscope className="w-5 h-5 text-blue-600" />
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-100 rounded-full flex items-center justify-center text-blue-700 shadow-inner">
+                          <Stethoscope className="w-5 h-5" />
                         </div>
                         <div>
-                          <p className="font-medium">{doctor.name}</p>
+                          <p className="font-bold text-sm text-gray-900">{doctor.name}</p>
                           <p className="text-sm text-gray-500">{doctor.email}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-sm">{doctor.phone}</td>
-                    <td className="py-3 px-4">{doctor.specialization}</td>
-                    <td className="py-3 px-4 text-sm">{doctor.license_number}</td>
-                    <td className="py-3 px-4">
+                    {/*Contact*/}
+                    <td className="py-4 px-6 align-middle">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Phone className="w-3 h-3 text-gray-400" />
+                          <span>{doctor.phone}</span>
+                      </div>
+                    </td>
+                    {/*Specialization*/}
+                    <td className="py-4 px-6 align-middle">
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-50 text-purple-700 text-sm font-medium border border-purple-100">
+                        <Activity className="w-3 h-3" />
+                        {doctor.specialization}
+                      </div>
+                    </td>
+                    {/*License Number & Date*/}
+                    <td className="py-4 px-6 align-middle">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5 text-sm font-mono text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded w-fit">
+                          <FileText className="w-3 h-3 text-gray-400" />
+                          {doctor.license_number}
+                        </div>
+                        <p className="text-[10px] text-gray-400 pl-1">
+                          Joined: {new Date(doctor.join_date).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </td>
+                    {/*Status*/}
+                    <td className="py-4 px-5 align-middle">
                       <Badge
-                        className={
+                        className={ `px-2.5 py-0.5 text-xs font-semibold border ${
                           doctor.status === 'active'
                             ? 'bg-green-100 text-green-800'
                             : 'bg-gray-100 text-gray-800'
-                        }
+                        }`}
                       >
                         {doctor.status}
                       </Badge>
                     </td>
-                    <td className="py-3 px-4 text-sm">
-                      {new Date(doctor.joinDate).toLocaleDateString()}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex gap-2">
+                    {/*Action*/}
+                    <td className="py-4 px-8 align-middle">
+                      <div className="flex items-center gap-2">
                         <button
                           onClick={() => toggleStatus(doctor.id, doctor.status)}
-                          className="text-blue-600 hover:text-blue-800"
+                          className={`p-2 rounded-full transition-colors ${
+                              doctor.status == 'active' 
+                              ? 'text-orange-500 hover:bg-orange-50 hover:text-orange-700'
+                              : 'text-green-600 hover:bg-green-50 hover:text-green-800'
+                            }`}
                           title={doctor.status === 'active' ? 'Deactivate' : 'Activate'}
+                        >
+                            {doctor.status === 'active' ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4"/>}
+                        </button>
+
+                        <div className="w-px h-4 bg-gray-200"></div>
+
+                        <button
+                          onClick={() => {/* Tambahkan fungsi edit di sini jika ada */}}
+                          className="p-2 text-blue-500 hover:bg-blue-50 hover:text-blue-700 rounded-full transition-colors"
+                          title="Edit Details"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteDoctor(doctor.id)}
-                          className="text-red-600 hover:text-red-800"
-                          title="Delete"
+                          className="text-red-500 hover:bg-red-50 hover:text-red-800 rounded-full transition-colors"
+                          title="Delete Doctor"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -323,79 +403,122 @@ export function DoctorManagement() {
 
       {/* Add Doctor Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>Add New Doctor</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleAddDoctor} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Full Name*</label>
-                  <Input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Dr. John Doe"
-                    required
-                  />
+        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <Card className="w-full max-w-2xl bg-white shadow-2xl rounded-xl overflow-hidden">
+
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between shadow">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                  <UserPlus className="w-5 h-5" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Email*</label>
-                  <Input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="doctor@vetclinic.com"
-                    required
-                  />
+                  <h2 className="text-lg font-bold text-gray-900">Add New Doctor</h2>
+                  <p className="text-sm text-gray-500">Create a new veterinarian account</p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Phone*</label>
-                  <Input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="+62-823-1234-5678"
-                    required
-                  />
+              </div>
+              <button 
+                title="Add" 
+                onClick={() => setShowAddModal(false)} 
+                className="text-gray-400 hover:text-gray-600 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <CardContent className="p-6 mt-4">
+              <form onSubmit={handleAddDoctor} className="space-y-5">
+                {/* Personal Info Group */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                    <UserCheck className="w-4 h-4"/> Personal Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name<span className="text-red-500">*</span></label>
+                      <Input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="Dr. John Doe"
+                        required
+                        className="bg-gray-50 border-gray-200 focus:bg-white transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Email<span className="text-red-500">*</span></label>
+                      <Input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        placeholder="doctor@vetclinic.com"
+                        required
+                        className="bg-gray-50 border-gray-200 focus:bg-white transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone<span className="text-red-500">*</span></label>
+                      <Input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        placeholder="+62-823-1234-5678"
+                        required
+                        className="bg-gray-50 border-gray-200 focus:bg-white transition-all"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Specialization*</label>
-                  <Input
-                    type="text"
-                    value={formData.specialization}
-                    onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
-                    placeholder="General Practice"
-                    required
-                  />
+
+                <div className="border-t border-gray-100"></div>
+
+                {/* Professional Info Group */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                    <UserCheck className="w-4 h-4"/> Professional Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Specialization<span className="text-red-500">*</span></label>
+                      <Input
+                        type="text"
+                        value={formData.specialization}
+                        onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
+                        placeholder="General Practice"
+                        required
+                        className="bg-gray-50 border-gray-200 focus:bg-white transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">License Number<span className="text-red-500">*</span></label>
+                      <Input
+                        type="text"
+                        value={formData.license_number}
+                        onChange={(e) => setFormData({ ...formData, license_number: e.target.value })}
+                        placeholder="VET-2024-XXX"
+                        required
+                        className="bg-gray-50 border-gray-200 focus:bg-white transition-all font-mono"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">License Number*</label>
-                  <Input
-                    type="text"
-                    value={formData.license_number}
-                    onChange={(e) => setFormData({ ...formData, license_number: e.target.value })}
-                    placeholder="VET-2024-XXX"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Password*</label>
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                  <label className="block text-sm font-bold text-blue-800 mb-1.5">Password<span className="text-red-500">*</span></label>
                   <Input
                     type="password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="Min. 8 characters, uppercase, number, special character"
+                    placeholder="Create a strong password"
                     required
                     minLength={8}
+                    className="bg-white border blue-200 focus:ring-blue-500"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Must contain uppercase, lowercase, number, and special character.
+                  <p className="text-[10px] text-gray-600/70 mt-1 flex items-center gap-1">
+                    <Activity className="w-3 h-3"/>
+                    Min. 8 chars, uppercase, lowercase, number & symbol required.
                   </p>
                 </div>
-                <div className="flex gap-2 pt-4">
-                  <Button type="submit" className="flex-1">
+
+                <div className="flex gap-3 pt-2">
+                  <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-200">
                     Add Doctor
                   </Button>
                   <Button
@@ -404,15 +527,10 @@ export function DoctorManagement() {
                     onClick={() => {
                       setShowAddModal(false);
                       setFormData({
-                        name: '',
-                        email: '',
-                        phone: '',
-                        specialization: '',
-                        license_number: '',
-                        password: '',
+                        name: '', email: '', phone: '', specialization: '', license_number: '', password: '',
                       });
                     }}
-                    className="flex-1"
+                    className="flex-1 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700"
                   >
                     Cancel
                   </Button>

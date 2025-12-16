@@ -14,6 +14,10 @@ export interface Patient {
   qr_code: string;
   status: 'healthy' | 'under-treatment' | 'recovered';
   notes?: string;
+  visit_date?: string;
+  assigned_doctor_id?: string;
+  assigned_at?: string;
+  assigned_doctor_user_id?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -25,7 +29,7 @@ export class PatientService {
       const supabase = createAdminClient();
 
       const { data, error } = await supabase
-        .from('patients_with_owners')
+        .from('patients_with_last_visit')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -48,6 +52,10 @@ export class PatientService {
         qr_code: row.qr_code,
         status: row.status || 'healthy',
         notes: row.notes,
+        visit_date: row.visit_date,
+        assigned_doctor_id: row.assigned_doctor_id,
+        assigned_at: row.assigned_at,
+        assigned_doctor_user_id: row.assigned_doctor_user_id,
         created_at: row.created_at,
         updated_at: row.updated_at
       }));
@@ -63,7 +71,7 @@ export class PatientService {
       const supabase = createAdminClient();
 
       const { data, error } = await supabase
-        .from('patients_with_owners')
+        .from('patients_with_last_visit')
         .select('*')
         .eq('id', id)
         .single();
@@ -86,6 +94,10 @@ export class PatientService {
         qr_code: data.qr_code,
         status: data.status || 'healthy',
         notes: data.notes,
+        visit_date: data.visit_date,
+        assigned_doctor_id: data.assigned_doctor_id,
+        assigned_at: data.assigned_at,
+        assigned_doctor_user_id: data.assigned_doctor_user_id,
         created_at: data.created_at,
         updated_at: data.updated_at
       };
@@ -270,7 +282,7 @@ export class PatientService {
       const supabase = createAdminClient();
 
       const { data, error } = await supabase
-        .from('patients_with_owners')
+        .from('patients_with_last_visit')
         .select('*')
         .or(`name.ilike.%${query}%,owner.ilike.%${query}%,species.ilike.%${query}%,breed.ilike.%${query}%`)
         .order('created_at', { ascending: false });
@@ -294,6 +306,10 @@ export class PatientService {
         qr_code: row.qr_code,
         status: row.status || 'healthy',
         notes: row.notes,
+        visit_date: row.visit_date,
+        assigned_doctor_id: row.assigned_doctor_id,
+        assigned_at: row.assigned_at,
+        assigned_doctor_user_id: row.assigned_doctor_user_id,
         created_at: row.created_at,
         updated_at: row.updated_at
       }));
@@ -309,7 +325,7 @@ export class PatientService {
       const supabase = createAdminClient();
 
       const { data, error } = await supabase
-        .from('patients_with_owners')
+        .from('patients_with_last_visit')
         .select('*')
         .eq('status', status)
         .order('created_at', { ascending: false });
@@ -333,6 +349,10 @@ export class PatientService {
         qr_code: row.qr_code,
         status: row.status || 'healthy',
         notes: row.notes,
+        visit_date: row.visit_date,
+        assigned_doctor_id: row.assigned_doctor_id,
+        assigned_at: row.assigned_at,
+        assigned_doctor_user_id: row.assigned_doctor_user_id,
         created_at: row.created_at,
         updated_at: row.updated_at
       }));
@@ -348,7 +368,7 @@ export class PatientService {
       const supabase = createAdminClient();
 
       const { data, error } = await supabase
-        .from('patients_with_owners')
+        .from('patients_with_last_visit')
         .select('*')
         .ilike('owner', ownerName)
         .order('created_at', { ascending: false });
@@ -372,6 +392,10 @@ export class PatientService {
         qr_code: row.qr_code,
         status: row.status || 'healthy',
         notes: row.notes,
+        visit_date: row.visit_date,
+        assigned_doctor_id: row.assigned_doctor_id,
+        assigned_at: row.assigned_at,
+        assigned_doctor_user_id: row.assigned_doctor_user_id,
         created_at: row.created_at,
         updated_at: row.updated_at
       }));

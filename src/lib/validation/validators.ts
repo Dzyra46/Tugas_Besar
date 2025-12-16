@@ -32,7 +32,7 @@ export function validateName(name: string, fieldName: string = 'Name'): { isVali
   }
   
   // Allow letters, numbers, spaces, hyphens and apostrophes
-  const nameRegex = /^[a-zA-Z0-9\s\-']+$/;
+  const nameRegex = /^[a-zA-Z0-9\s\-'.]+$/;
   if (!nameRegex.test(name)) {
     return { isValid: false, error: `${fieldName} contains invalid characters` };
   }

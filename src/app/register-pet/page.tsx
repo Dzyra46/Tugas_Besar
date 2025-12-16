@@ -75,7 +75,7 @@ export default function RegisterPetPage() {
     // Password validation
     if (!formData.password) issues.push('Password is required');
     if (formData.password.length < 8) issues.push('Password must be at least 8 characters');
-    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(formData.password)) {
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[^\s]{8,}$/.test(formData.password)) {
       issues.push('Password must contain uppercase, lowercase, number, and special character');
     }
     if (formData.password !== formData.confirmPassword) issues.push('Passwords do not match');

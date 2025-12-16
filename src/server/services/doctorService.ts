@@ -3,6 +3,7 @@ import { hashPassword } from '@/lib/auth/password';
 
 export interface Doctor {
   id: string;
+  user_id: string;
   name: string;
   email: string;
   specialization: string;
@@ -31,6 +32,7 @@ export class DoctorService {
       // Map database fields to Doctor interface
       return (data || []).map(row => ({
         id: row.id,
+        user_id: row.user_id,
         name: row.name,
         email: row.email,
         specialization: row.specialization,
@@ -62,6 +64,7 @@ export class DoctorService {
 
       return {
         id: data.id,
+        user_id: data.user_id,
         name: data.name,
         email: data.email,
         specialization: data.specialization,
@@ -124,6 +127,7 @@ export class DoctorService {
       // 4. Return the created doctor
       return {
         id: doctorData.id,
+        user_id: userData.id,
         name: data.name,
         email: data.email,
         specialization: data.specialization,
@@ -247,6 +251,7 @@ export class DoctorService {
 
       return (data || []).map(row => ({
         id: row.id,
+        user_id: row.user_id,
         name: row.name,
         email: row.email,
         specialization: row.specialization,
@@ -279,6 +284,7 @@ export class DoctorService {
 
       return (data || []).map(row => ({
         id: row.id,
+        user_id: row.user_id,
         name: row.name,
         email: row.email,
         specialization: row.specialization,

@@ -9,6 +9,7 @@ interface MedicalRecordInput {
   patientId: string;
   doctorId?: string;
   visitDate: string; // ISO format: YYYY-MM-DD
+  weight?: number;
   diagnosis: string;
   treatment: string;
   medication: string;
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
     // 5. Fetch from database
     const supabase = createAdminClient();
     let query = supabase
-      .from('medical_records')
+      .from('medical_records_detailed')
       .select('*', { count: 'exact' })
       .order('visit_date', { ascending: false });
 
@@ -83,6 +84,33 @@ export async function GET(request: NextRequest) {
       query = query.eq('patient_owner_id', user!.id);
     }
 
+    // For doctor role, only show records for their assigned patients
+    if (user!.role === 'doctor') {
+      // First, get the doctor's ID from the doctors table
+      const { data: doctorData, error: doctorError } = await supabase
+        .from('doctors')
+        .select('id')
+        .eq('user_id', user!.id)
+        .single();
+
+      if (doctorError || !doctorData) {
+        console.error('Doctor lookup error:', doctorError);
+        return authError('Doctor not found', 404);
+      }
+
+      // Filter medical records to only show:
+      // 1. Records created by this doctor (doctor_id matches)
+      // 2. OR records for patients assigned to this doctor
+      // We need to join with patients table to check assigned_doctor_id
+      
+      // Since we're using medical_records_detailed view which already includes patient info,
+      // we can check if the patient is assigned to this doctor
+      // However, the view might not include assigned_doctor_id, so we need alternative approach:
+      
+      // Option 1: Filter by doctor_id (records this doctor created)
+      query = query.eq('doctor_id', doctorData.id);
+    }
+
     query = query.range(offset, offset + limit - 1);
 
     const { data: records, error: dbError, count } = await query;
@@ -104,7 +132,7 @@ export async function GET(request: NextRequest) {
       user_name: user!.name,
       user_role: user!.role,
       action: 'view',
-      resource: 'medical_records',
+      resource: 'medical_records_detailed',
       details: `Retrieved ${records?.length || 0} medical records`,
       ip_address: getClientIP(request),
       status: 'success',
@@ -153,12 +181,12 @@ export async function POST(request: NextRequest) {
 
     // 3. Parse request body
     const body: MedicalRecordInput = await request.json();
-    const { patientId, doctorId, visitDate, diagnosis, treatment, medication, notes, nextVisit } = body;
+    const { patientId, doctorId, visitDate, weight,diagnosis, treatment, medication, notes, nextVisit } = body;
 
     // 4. Validate required fields
-    if (!patientId || !visitDate || !diagnosis || !treatment || !medication) {
+    if (!patientId || !visitDate || !weight || !diagnosis || !treatment || !medication) {
       return authError(
-        'Missing required fields: patientId, visitDate, diagnosis, treatment, medication',
+        'Missing required fields: patientId, visitDate, weight, diagnosis, treatment, medication',
         400
       );
     }
@@ -169,10 +197,39 @@ export async function POST(request: NextRequest) {
       return authError(patientIdValidation.error!, 400);
     }
 
-    const effectiveDoctorId = doctorId || user!.id;
+    let effectiveDoctorId = doctorId;
+
+    // Jika doctorId tidak disediakan dan user adalah doctor, cari doctor.id dari user.id
+    if (!effectiveDoctorId && user!.role === 'doctor') {
+      const supabase = createAdminClient();
+      const { data: doctorData, error: doctorError } = await supabase
+        .from('doctors')
+        .select('id')
+        .eq('user_id', user!.id)
+        .single();
+
+      if (doctorError || !doctorData) {
+        return authError('Doctor record not found for current user', 404);
+      }
+
+      effectiveDoctorId = doctorData.id;
+    }
+
+    // Validate doctor ID
+    if (!effectiveDoctorId) {
+      return authError('Doctor ID is required', 400);
+    }
+
     const doctorIdValidation = validateUUID(effectiveDoctorId, 'Doctor ID');
     if (!doctorIdValidation.isValid) {
       return authError(doctorIdValidation.error!, 400);
+    }
+
+    // Validate weight if provided
+    if (weight !== undefined && weight !== null) {
+      if (typeof weight !== 'number' || weight < 0 || weight > 500) {
+        return authError('Weight must be a number between 0 and 500 kg', 400);
+      }
     }
 
     // Validate text fields
@@ -228,6 +285,7 @@ export async function POST(request: NextRequest) {
         patient_id: patientId,
         doctor_id: effectiveDoctorId,
         visit_date: visitDate,
+        weight: weight || null,
         diagnosis,
         treatment,
         medication,
@@ -242,6 +300,27 @@ export async function POST(request: NextRequest) {
     if (dbError) {
       console.error('Database error:', dbError);
       return authError('Failed to create medical record', 500);
+    }
+
+    const { data: existingRecords } = await supabase
+      .from('medical_records')
+      .select('id')
+      .eq('patient_id', patientId);
+
+    // Jika hanya ada 1 record (yang baru dibuat), assign doctor ke patient
+    if (existingRecords && existingRecords.length === 1) {
+      const { error: assignError } = await supabase
+        .from('patients')
+        .update({
+          assigned_doctor_id: effectiveDoctorId,
+          assigned_at: new Date().toISOString()
+        })
+        .eq('id', patientId);
+
+      if (assignError) {
+        console.error('Failed to assign doctor to patient:', assignError);
+        // Tidak return error karena medical record sudah berhasil dibuat
+      }
     }
 
     // 7. Log audit
@@ -310,6 +389,12 @@ export async function PATCH(request: NextRequest) {
     }
 
     // 5. Validate update fields
+    if (updateData.weight !== undefined && updateData.weight !== null) {
+      if (typeof updateData.weight !== 'number' || updateData.weight < 0 || updateData.weight > 500) {
+        return authError('Weight must be a number between 0 and 500 kg', 400);
+      }
+    }
+
     if (updateData.diagnosis) {
       const diagnosisValidation = validateTextField(updateData.diagnosis, 'Diagnosis', 3, 500);
       if (!diagnosisValidation.isValid) {
@@ -346,7 +431,7 @@ export async function PATCH(request: NextRequest) {
     };
     
     const { data: updatedRecord, error: dbError } = await supabase
-      .from('medical_records')
+      .from('medical_records_detailed')
       .update({
         ...updateData,
         updated_at: new Date().toISOString(),
@@ -429,7 +514,7 @@ export async function DELETE(request: NextRequest) {
     };
     
     const { error: dbError } = await supabase
-      .from('medical_records')
+      .from('medical_records_detailed')
       .delete()
       .eq('id', id);
 

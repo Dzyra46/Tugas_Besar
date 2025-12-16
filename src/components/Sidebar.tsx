@@ -36,7 +36,6 @@ export function Sidebar() {
       { id: 'patients', label: 'Patients', href: '/admin/patients', icon: Users },
   { id: 'doctors', label: 'Doctors', href: '/admin/doctors', icon: Stethoscope },
       { id: 'corrections', label: 'Corrections', href: '/admin/corrections', icon: Edit3 },
-      { id: 'add-patient', label: 'Add Patient', href: '/admin/add-patient', icon: UserPlus },
       { id: 'generate-qr', label: 'Generate QR', href: '/admin/generate-qr', icon: QrCode },
         { id: 'logs', label: 'System Logs', href: '/admin/logs', icon: Activity }
     ],

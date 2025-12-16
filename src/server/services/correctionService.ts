@@ -190,18 +190,21 @@ export class CorrectionService {
       // Get doctor_id from doctor name (assuming doctor is authenticated)
       // For now, we'll use a placeholder. In production, get from session.
       const { data: doctor } = await supabase
-        .from('users')
+        .from('doctors_with_users')
         .select('id')
         .eq('name', data.doctorName)
-        .eq('role', 'doctor')
         .single();
+
+      if (!doctor) {
+        throw new Error('Doctor not found');
+      }
 
       const { data: correctionData, error } = await supabase
         .from('corrections')
         .insert({
           record_id: data.recordId,
           patient_id: data.patientId,
-          doctor_id: doctor?.id || '00000000-0000-0000-0000-000000000000',
+          doctor_id: doctor.id,
           patient_name: data.patientName,
           doctor_name: data.doctorName,
           field: data.field,
